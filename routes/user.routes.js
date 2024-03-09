@@ -5,7 +5,7 @@ const User = require("../models/User.model");
 
 // Route to get user profile
 router.get("/profile", isAuthenticated, async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.payload.id;
 
   try {
     const user = await User.findById(userId).select("-password"); // Exclude the password from the result
@@ -27,7 +27,7 @@ router.get("/profile", isAuthenticated, async (req, res) => {
 // Route to update user data
 router.put("/edit-profile", isAuthenticated, async (req, res) => {
   const { dailyCalorieGoal, weightGoal, currentWeight } = req.body;
-  const userId = req.user.id;
+  const userId = req.payload.id;
 
   try {
     const updatedUser = await User.findByIdAndUpdate(

@@ -6,7 +6,7 @@ const Review = require("../models/Review.model");
 // Create a review
 router.post("/add", isAuthenticated, async (req, res) => {
   const { food, taste, digestion, rate } = req.body;
-  const author = req.user.id;
+  const author = req.payload.id;
 
   // Example validation for 'rate'
   if (rate < 1 || rate > 5) {
@@ -32,7 +32,7 @@ router.post("/add", isAuthenticated, async (req, res) => {
 // Get reviews by the logged-in user
 router.get("/", isAuthenticated, async (req, res) => {
   try {
-    const reviews = await Review.find({ author: req.user.id }).populate("food");
+    const reviews = await Review.find({ author: req.payload.id }).populate("food");
     res.status(200).json(reviews);
   } catch (error) {
     res
@@ -52,7 +52,7 @@ router.put("/edit/:id", isAuthenticated, async (req, res) => {
   }
 
   try {
-    const review = await Review.findOne({ _id: id, author: req.user.id });
+    const review = await Review.findOne({ _id: id, author: req.payload.id });
     if (!review) {
       return res
         .status(404)
@@ -79,7 +79,7 @@ router.delete("/delete/:id", isAuthenticated, async (req, res) => {
   try {
     const deletedReview = await Review.findOneAndDelete({
       _id: id,
-      author: req.user.id,
+      author: req.payload.id,
     });
     if (!deletedReview) {
       return res

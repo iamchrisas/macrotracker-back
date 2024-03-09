@@ -23,7 +23,7 @@ router.post(
 
     try {
       const newFood = new Food({
-        user: req.user.id,
+        user: req.payload.id,
         name,
         protein: protein || 0,
         carbs: carbs || 0,
@@ -44,7 +44,7 @@ router.post(
 // View food items
 router.get("/", isAuthenticated, async (req, res) => {
   try {
-    const foodItems = await Food.find({ user: req.user.id });
+    const foodItems = await Food.find({ user: req.payload.id });
     res.status(200).json(foodItems);
   } catch (err) {
     res
@@ -69,7 +69,7 @@ router.put(
 
     try {
       const foodItem = await Food.findById(id);
-      if (!foodItem || foodItem.user.toString() !== req.user.id) {
+      if (!foodItem || foodItem.user.toString() !== req.payload.id) {
         return res
           .status(403)
           .json({ message: "Unauthorized or food item not found" });
@@ -113,7 +113,7 @@ router.delete("/delete/:id", isAuthenticated, async (req, res) => {
     }
 
     // Check if the food item belongs to the authenticated user
-    if (foodItem.user.toString() !== req.user.id) {
+    if (foodItem.user.toString() !== req.payload.id) {
       return res
         .status(403)
         .json({ message: "Unauthorized to delete this food item" });
