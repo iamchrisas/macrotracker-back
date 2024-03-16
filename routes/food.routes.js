@@ -15,7 +15,8 @@ router.post(
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
     }
-    let imageUrl = ""; // Default value if no image is uploaded
+    let imageUrl =
+      "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer-e05bbc84-baa3-437e-9518-adb32be77984.s3.amazonaws.com%2Fpublic%2Fimages%2Fda435093-5e78-410d-b72b-ba3500a18130"; // Default value if no image is uploaded
 
     if (req.file) {
       imageUrl = req.file.path; // Cloudinary URL of the uploaded image

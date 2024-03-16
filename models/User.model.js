@@ -1,6 +1,5 @@
 const { Schema, model } = require("mongoose");
 
-// TODO: Please make sure you edit the User model to whatever makes sense in this case
 const userSchema = new Schema(
   {
     email: {
@@ -18,6 +17,18 @@ const userSchema = new Schema(
       type: String,
       required: [true, "Name is required."],
     },
+    dailyProteinGoal: {
+      type: Number,
+      default: 0,
+    },
+    dailyCarbGoal: {
+      type: Number,
+      default: 0,
+    },
+    dailyFatGoal: {
+      type: Number,
+      default: 0,
+    },
     dailyCalorieGoal: {
       type: Number,
       default: 0,
@@ -26,13 +37,15 @@ const userSchema = new Schema(
       type: Number,
       default: 0,
     },
-    currentWeight: {
-      type: Number,
-      default: 0,
-    },
+    weightHistory: [{
+      weight: Number,
+      date: {
+        type: Date,
+        default: Date.now
+      }
+    }],
   },
   {
-    // this second object adds extra properties: `createdAt` and `updatedAt`
     timestamps: true,
   }
 );
