@@ -5,7 +5,7 @@ const Review = require("../models/Review.model");
 const Food = require("../models/Food.model");
 
 // Create a review
-router.post("/add", isAuthenticated, async (req, res) => {
+router.post("/add-review", isAuthenticated, async (req, res) => {
   const { food, taste, digestion, rate } = req.body;
   const author = req.payload.id;
 
@@ -51,8 +51,30 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
+// Get a single review by ID
+router.get("/:id", isAuthenticated, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const review = await Review.findById(id).populate("food");
+    if (!review) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+    if (review.author.toString() !== req.payload.id) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized access to this review" });
+    }
+    res.status(200).json(review);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error fetching review", error: error.toString() });
+  }
+});
+
 // Update a review
-router.put("/edit/:id", isAuthenticated, async (req, res) => {
+router.put("/edit-review/:id", isAuthenticated, async (req, res) => {
   const { id } = req.params;
   const { food, taste, digestion, rate } = req.body; // Include 'food' if updating it
 
@@ -94,7 +116,7 @@ router.put("/edit/:id", isAuthenticated, async (req, res) => {
 });
 
 // Delete a review
-router.delete("/delete/:id", isAuthenticated, async (req, res) => {
+router.delete("/delete-review/:id", isAuthenticated, async (req, res) => {
   const { id } = req.params;
 
   try {

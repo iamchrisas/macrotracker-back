@@ -7,11 +7,11 @@ const cloudinary = require("cloudinary").v2;
 
 // Add food item with image upload
 router.post(
-  "/add",
+  "/add-food",
   isAuthenticated,
   fileUploader.single("image"),
   async (req, res) => {
-    const { name, protein, carbs, fat } = req.body;
+    const { name, protein, carbs, fat, calories } = req.body; // Include calories in the destructuring
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
     }
@@ -29,6 +29,7 @@ router.post(
         protein: protein || 0,
         carbs: carbs || 0,
         fat: fat || 0,
+        calories: calories || 0, // Ensure calories are included and have a default value
         image: imageUrl,
       });
 
@@ -54,14 +55,31 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
+// View a single food item
+router.get("/:id", isAuthenticated, async (req, res) => {
+  try {
+    const foodItem = await Food.findById(req.params.id);
+    if (!foodItem || foodItem.user.toString() !== req.payload.id) {
+      return res
+        .status(404)
+        .json({ message: "Food item not found or unauthorized" });
+    }
+    res.status(200).json(foodItem);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error fetching food item", error: err.toString() });
+  }
+});
+
 // Edit food item with image upload
 router.put(
-  "/edit/:id",
+  "/edit-food/:id",
   isAuthenticated,
   fileUploader.single("image"),
   async (req, res) => {
     const { id } = req.params;
-    const { name, protein, carbs, fat } = req.body;
+    const { name, protein, carbs, fat, calories } = req.body; // Include calories in the destructuring
     let imageUrl = req.body.image; // Use existing image URL by default
 
     if (req.file) {
@@ -81,6 +99,7 @@ router.put(
       if (protein) foodItem.protein = protein;
       if (carbs) foodItem.carbs = carbs;
       if (fat) foodItem.fat = fat;
+      if (calories) foodItem.calories = calories; // Accept calories from the client
       if (imageUrl) foodItem.image = imageUrl;
 
       const updatedFood = await foodItem.save();
@@ -104,7 +123,7 @@ const extractPublicIdFromUrl = (url) => {
 };
 
 // Delete food item
-router.delete("/delete/:id", isAuthenticated, async (req, res) => {
+router.delete("/delete-food/:id", isAuthenticated, async (req, res) => {
   const { id } = req.params;
 
   try {

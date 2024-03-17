@@ -8,6 +8,7 @@ const foodSchema = new Schema({
   carbs: { type: Number, default: 0 },
   fat: { type: Number, default: 0 },
   image: { type: String },
+  calories: { type: Number, default: 0 },
 });
 
 module.exports = model("Food", foodSchema);

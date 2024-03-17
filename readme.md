@@ -14,8 +14,8 @@ Node.js, Express, MongoDB, JWT.
 ## Endpoints
 
 - `/auth` for authentication.
-- `/api/user` for user profiles.
-- `/api/food` for food database.
-- `/api/review` for food reviews.
+- `/api/users` for users.
+- `/api/foods` for food items.
+- `/api/reviews` for food reviews.
 
 

@@ -5,7 +5,7 @@ const User = require("../models/User.model");
 const Food = require("../models/Food.model");
 
 // Route to get user profile
-router.get("/profile", isAuthenticated, async (req, res) => {
+router.get("/user-profile", isAuthenticated, async (req, res) => {
   try {
     const userId = req.payload.id;
 
@@ -118,18 +118,17 @@ router.get("/daily-stats", isAuthenticated, async (req, res) => {
       date: { $gte: startOfDay, $lte: endOfDay },
     });
 
-    // Calculate total intake
+    // Calculate total intake using the calories field directly
     const totals = foodItemsToday.reduce(
       (acc, item) => {
         acc.protein += item.protein;
         acc.carbs += item.carbs;
         acc.fat += item.fat;
+        acc.calories += item.calories; // Directly add item's calories
         return acc;
       },
-      { protein: 0, carbs: 0, fat: 0 }
+      { protein: 0, carbs: 0, fat: 0, calories: 0 } // Initialize calories in the accumulator
     );
-
-    totals.calories = Math.round(totals.protein * 4 + totals.carbs * 4 + totals.fat * 9);
 
     // Calculate remaining goals
     const remaining = {
@@ -168,18 +167,19 @@ router.get("/weekly-stats", isAuthenticated, async (req, res) => {
           totalProtein: { $sum: "$protein" },
           totalCarbs: { $sum: "$carbs" },
           totalFat: { $sum: "$fat" },
+          totalCalories: { $sum: "$calories" }, // Directly sum the calories
         },
       },
       { $sort: { _id: 1 } }, // Sort by date ascending
     ]);
 
-    // Map the results to include total calories and format the response
+    // Map the results to format the response, now including the summed totalCalories
     const results = foodItems.map((item) => ({
       date: item._id,
       protein: item.totalProtein,
       carbs: item.totalCarbs,
       fat: item.totalFat,
-      calories: item.totalProtein * 4 + item.totalCarbs * 4 + item.totalFat * 9,
+      calories: item.totalCalories, // Use the directly summed calories
     }));
 
     res.status(200).json(results);
