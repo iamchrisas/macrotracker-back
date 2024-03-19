@@ -37,13 +37,10 @@ const userSchema = new Schema(
       type: Number,
       default: 0,
     },
-    weightHistory: [{
-      weight: Number,
-      date: {
-        type: Date,
-        default: Date.now
-      }
-    }],
+    currentWeight: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

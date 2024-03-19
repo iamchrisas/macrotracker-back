@@ -31,34 +31,12 @@ router.get("/user-profile", isAuthenticated, async (req, res) => {
   }
 });
 
-// Add a new weight entry for the user
-router.post("/add-weight", isAuthenticated, async (req, res) => {
-  const { weight } = req.body;
-  const userId = req.payload.id;
-
-  try {
-    const user = await User.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Add the new weight entry
-    user.weightHistory.push({ weight });
-    await user.save();
-
-    res.status(200).json({ message: "Weight added successfully", user });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error adding weight", error: error.toString() });
-  }
-});
-
 // Route to update user data
 router.put("/edit-profile", isAuthenticated, async (req, res) => {
   const {
-    dailyCalorieGoal,
+    currentWeight,
     weightGoal,
+    dailyCalorieGoal,
     dailyProteinGoal,
     dailyCarbGoal,
     dailyFatGoal,
@@ -73,9 +51,10 @@ router.put("/edit-profile", isAuthenticated, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    if (currentWeight !== undefined) user.currentWeight = currentWeight;
+    if (weightGoal !== undefined) user.weightGoal = weightGoal;
     if (dailyCalorieGoal !== undefined)
       user.dailyCalorieGoal = dailyCalorieGoal;
-    if (weightGoal !== undefined) user.weightGoal = weightGoal;
     if (dailyProteinGoal !== undefined)
       user.dailyProteinGoal = dailyProteinGoal;
     if (dailyCarbGoal !== undefined) user.dailyCarbGoal = dailyCarbGoal;
@@ -143,50 +122,6 @@ router.get("/daily-stats", isAuthenticated, async (req, res) => {
     console.error("Error fetching daily nutrition status:", error);
     res.status(500).json({
       message: "Error fetching daily nutrition status",
-      error: error.toString(),
-    });
-  }
-});
-
-// Route to view food stats for each day, week after week
-router.get("/weekly-stats", isAuthenticated, async (req, res) => {
-  const userId = req.payload.id;
-  const { startDate, endDate } = req.query; // Expecting 'startDate' and 'endDate' in 'YYYY-MM-DD' format
-
-  try {
-    const foodItems = await Food.aggregate([
-      {
-        $match: {
-          user: userId,
-          date: { $gte: new Date(startDate), $lte: new Date(endDate) },
-        },
-      },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-          totalProtein: { $sum: "$protein" },
-          totalCarbs: { $sum: "$carbs" },
-          totalFat: { $sum: "$fat" },
-          totalCalories: { $sum: "$calories" }, // Directly sum the calories
-        },
-      },
-      { $sort: { _id: 1 } }, // Sort by date ascending
-    ]);
-
-    // Map the results to format the response, now including the summed totalCalories
-    const results = foodItems.map((item) => ({
-      date: item._id,
-      protein: item.totalProtein,
-      carbs: item.totalCarbs,
-      fat: item.totalFat,
-      calories: item.totalCalories, // Use the directly summed calories
-    }));
-
-    res.status(200).json(results);
-  } catch (error) {
-    console.error("Error fetching weekly nutrition data:", error);
-    res.status(500).json({
-      message: "Error fetching weekly nutrition data",
       error: error.toString(),
     });
   }
