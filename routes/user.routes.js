@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const { isAuthenticated } = require("../middleware/jwt.middleware"); // Adjust the path as necessary
 const User = require("../models/User.model");
-const Food = require("../models/Food.model");
 
 // Route to get user profile
 router.get("/user-profile", isAuthenticated, async (req, res) => {
@@ -44,7 +43,7 @@ router.put("/edit-profile", isAuthenticated, async (req, res) => {
   const userId = req.payload.id;
 
   try {
-    // Find the user first to update the weightHistory array and other goals
+    // Find the user
     const user = await User.findById(userId).select("-password");
 
     if (!user) {
@@ -77,54 +76,5 @@ router.put("/edit-profile", isAuthenticated, async (req, res) => {
   }
 });
 
-// Route to view food stats of the day
-router.get("/daily-stats", isAuthenticated, async (req, res) => {
-  const userId = req.payload.id;
-  const startOfDay = new Date();
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999);
-
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const foodItemsToday = await Food.find({
-      user: userId,
-      date: { $gte: startOfDay, $lte: endOfDay },
-    });
-
-    // Calculate total intake using the calories field directly
-    const totals = foodItemsToday.reduce(
-      (acc, item) => {
-        acc.protein += item.protein;
-        acc.carbs += item.carbs;
-        acc.fat += item.fat;
-        acc.calories += item.calories; // Directly add item's calories
-        return acc;
-      },
-      { protein: 0, carbs: 0, fat: 0, calories: 0 } // Initialize calories in the accumulator
-    );
-
-    // Calculate remaining goals
-    const remaining = {
-      protein: Math.round(user.dailyProteinGoal - totals.protein),
-      carbs: Math.round(user.dailyCarbGoal - totals.carbs),
-      fat: Math.round(user.dailyFatGoal - totals.fat),
-      calories: Math.round(user.dailyCalorieGoal - totals.calories),
-    };
-
-    res.status(200).json({ totals, remaining });
-  } catch (error) {
-    console.error("Error fetching daily nutrition status:", error);
-    res.status(500).json({
-      message: "Error fetching daily nutrition status",
-      error: error.toString(),
-    });
-  }
-});
 
 module.exports = router;

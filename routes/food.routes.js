@@ -3,6 +3,8 @@ const router = express.Router();
 const { isAuthenticated } = require("../middleware/jwt.middleware");
 const fileUploader = require("../config/cloudinary.config");
 const Food = require("../models/Food.model");
+const User = require("../models/User.model");
+const Review = require("../models/Review.model");
 const cloudinary = require("cloudinary").v2;
 
 // Add food item with image upload
@@ -43,6 +45,66 @@ router.post(
   }
 );
 
+// Route to view food stats of the day
+router.get("/daily-stats", isAuthenticated, async (req, res) => {
+  const userId = req.payload.id;
+  // Accept a date parameter from the query string; use current date as fallback
+  const queryDate = req.query.date ? new Date(req.query.date) : new Date();
+  queryDate.setHours(0, 0, 0, 0); // Set to start of the query day
+
+  const startOfDay = new Date(queryDate);
+  const endOfDay = new Date(queryDate);
+  endOfDay.setHours(23, 59, 59, 999); // Set to end of the query day
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const foodItemsToday = await Food.find({
+      user: userId,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    // Calculate total intake
+    const totals = foodItemsToday.reduce(
+      (acc, item) => {
+        acc.protein += item.protein;
+        acc.carbs += item.carbs;
+        acc.fat += item.fat;
+        acc.calories += item.calories;
+        return acc;
+      },
+      { protein: 0, carbs: 0, fat: 0, calories: 0 }
+    );
+
+    // Goals directly from the user model
+    const goals = {
+      protein: user.dailyProteinGoal,
+      carbs: user.dailyCarbGoal,
+      fat: user.dailyFatGoal,
+      calories: user.dailyCalorieGoal,
+    };
+
+    // Calculate remaining goals
+    const remaining = {
+      protein: Math.round(goals.protein - totals.protein),
+      carbs: Math.round(goals.carbs - totals.carbs),
+      fat: Math.round(goals.fat - totals.fat),
+      calories: Math.round(goals.calories - totals.calories),
+    };
+
+    res.status(200).json({ totals, goals, remaining });
+  } catch (error) {
+    console.error("Error fetching daily nutrition status:", error);
+    res.status(500).json({
+      message: "Error fetching daily nutrition status",
+      error: error.toString(),
+    });
+  }
+});
+
 // View food items
 router.get("/", isAuthenticated, async (req, res) => {
   try {
@@ -55,20 +117,29 @@ router.get("/", isAuthenticated, async (req, res) => {
   }
 });
 
-// View a single food item
+// View a single food item along with its reviews
 router.get("/:id", isAuthenticated, async (req, res) => {
   try {
-    const foodItem = await Food.findById(req.params.id);
+    const foodId = req.params.id;
+    const foodItem = await Food.findById(foodId);
+    
+    // Check if the food item exists and belongs to the authenticated user
     if (!foodItem || foodItem.user.toString() !== req.payload.id) {
-      return res
-        .status(404)
-        .json({ message: "Food item not found or unauthorized" });
+      return res.status(404).json({ message: "Food item not found or unauthorized" });
     }
-    res.status(200).json(foodItem);
+
+    // Fetch reviews associated with the food item
+    const reviews = await Review.find({ food: foodId }).populate('author', 'username'); // Adjust 'username' as needed
+
+    // Combine the food item details with its reviews in the response
+    const response = {
+      foodItem,
+      reviews,
+    };
+
+    res.status(200).json(response);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Error fetching food item", error: err.toString() });
+    res.status(500).json({ message: "Error fetching food item and reviews", error: err.toString() });
   }
 });
 
@@ -162,5 +233,8 @@ router.delete("/delete-food/:id", isAuthenticated, async (req, res) => {
       .json({ message: "Error deleting food item", error: err.toString() });
   }
 });
+
+
+
 
 module.exports = router;
