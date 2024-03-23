@@ -118,28 +118,25 @@ router.put("/edit-review/:id", isAuthenticated, async (req, res) => {
 // Delete a review
 router.delete("/delete-review/:id", isAuthenticated, async (req, res) => {
   const { id } = req.params;
-
+  if (!id) {
+    return res.status(400).json({ message: "Review ID is required" });
+  }
   try {
-    // Attempt to find and delete the review, ensuring the current user is the author
-    const deletedReview = await Review.findOneAndDelete({
-      _id: id,
-      author: req.payload.id,
-    });
+    const reviewToDelete = await Review.findById(id);
 
-    // If no review was found to delete, either it doesn't exist or the current user isn't the author
-    if (!deletedReview) {
-      return res
-        .status(404)
-        .json({ message: "Review not found or unauthorized" });
+    if (!reviewToDelete) {
+      return res.status(404).json({ message: "Review not found" });
     }
 
-    // Successfully deleted the review
+    if (reviewToDelete.author.toString() !== req.payload.id) {
+      return res.status(403).json({ message: "Unauthorized to delete this review" });
+    }
+
+    await reviewToDelete.remove();
     res.status(200).json({ message: "Review deleted successfully" });
   } catch (error) {
-    // Handle any errors that occur during the deletion process
-    res
-      .status(500)
-      .json({ message: "Error deleting review", error: error.toString() });
+    console.error("Error deleting review:", error); // Server-side logging
+    res.status(500).json({ message: "Error deleting review", error: "An error occurred" });
   }
 });
 
