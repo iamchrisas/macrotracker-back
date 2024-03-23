@@ -122,14 +122,19 @@ router.get("/:id", isAuthenticated, async (req, res) => {
   try {
     const foodId = req.params.id;
     const foodItem = await Food.findById(foodId);
-    
+
     // Check if the food item exists and belongs to the authenticated user
     if (!foodItem || foodItem.user.toString() !== req.payload.id) {
-      return res.status(404).json({ message: "Food item not found or unauthorized" });
+      return res
+        .status(404)
+        .json({ message: "Food item not found or unauthorized" });
     }
 
     // Fetch reviews associated with the food item
-    const reviews = await Review.find({ food: foodId }).populate('author', 'username'); // Adjust 'username' as needed
+    const reviews = await Review.find({ food: foodId }).populate(
+      "author",
+      "username"
+    ); // Adjust 'username' as needed
 
     // Combine the food item details with its reviews in the response
     const response = {
@@ -139,7 +144,10 @@ router.get("/:id", isAuthenticated, async (req, res) => {
 
     res.status(200).json(response);
   } catch (err) {
-    res.status(500).json({ message: "Error fetching food item and reviews", error: err.toString() });
+    res.status(500).json({
+      message: "Error fetching food item and reviews",
+      error: err.toString(),
+    });
   }
 });
 
@@ -213,8 +221,9 @@ router.delete("/delete-food/:id", isAuthenticated, async (req, res) => {
     // Delete the image from Cloudinary if it exists
     if (foodItem.image) {
       const publicId = extractPublicIdFromUrl(foodItem.image);
+      const folderPath = "ih-macrotracker/"; // Specify the folder path where your images are stored
       try {
-        await cloudinary.uploader.destroy(publicId);
+        await cloudinary.uploader.destroy(folderPath + publicId);
       } catch (cloudinaryErr) {
         console.error("Error deleting image from Cloudinary:", cloudinaryErr);
         return res.status(500).json({
@@ -233,8 +242,5 @@ router.delete("/delete-food/:id", isAuthenticated, async (req, res) => {
       .json({ message: "Error deleting food item", error: err.toString() });
   }
 });
-
-
-
 
 module.exports = router;
