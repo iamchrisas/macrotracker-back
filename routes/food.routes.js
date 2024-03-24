@@ -49,7 +49,20 @@ router.post(
 router.get("/daily-stats", isAuthenticated, async (req, res) => {
   const userId = req.payload.id;
   // Accept a date parameter from the query string; use current date as fallback
-  const queryDate = req.query.date ? new Date(req.query.date) : new Date();
+  let queryDate = new Date();
+  if (req.query.date) {
+    if (isNaN(Date.parse(req.query.date))) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
+    queryDate = new Date(req.query.date);
+  }
+
+  // Optionally accept a time zone offset in minutes (client to server)
+  const timeZoneOffset = req.query.tzOffset
+    ? parseInt(req.query.tzOffset, 10)
+    : 0;
+  queryDate = new Date(queryDate.getTime() - timeZoneOffset * 60000);
+
   queryDate.setHours(0, 0, 0, 0); // Set to start of the query day
 
   const startOfDay = new Date(queryDate);
@@ -131,10 +144,7 @@ router.get("/:id", isAuthenticated, async (req, res) => {
     }
 
     // Fetch reviews associated with the food item
-    const reviews = await Review.find({ food: foodId }).populate(
-      "author",
-      "username"
-    ); // Adjust 'username' as needed
+    const reviews = await Review.find({ food: foodId }).populate("author");
 
     // Combine the food item details with its reviews in the response
     const response = {
