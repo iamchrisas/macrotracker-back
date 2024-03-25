@@ -73,57 +73,16 @@ router.get("/:id", isAuthenticated, async (req, res) => {
   }
 });
 
-// Update a review
-router.put("/edit-review/:id", isAuthenticated, async (req, res) => {
-  const { id } = req.params;
-  const { food, taste, digestion, rate } = req.body; // Include 'food' if updating it
 
-  // Example validation for 'rate'
-  if (rate < 1 || rate > 5) {
-    return res.status(400).json({ message: "Rate must be between 1 and 5" });
-  }
-
-  try {
-    // Verify the existence of the food item if 'food' is being updated
-    if (food) {
-      const foodItem = await Food.findById(food);
-      if (!foodItem) {
-        return res.status(404).json({ message: "Food item not found" });
-      }
-    }
-
-    const review = await Review.findOne({ _id: id, author: req.payload.id });
-    if (!review) {
-      return res
-        .status(404)
-        .json({ message: "Review not found or unauthorized" });
-    }
-
-    // Update fields if provided
-    if (taste !== undefined) review.taste = taste;
-    if (digestion !== undefined) review.digestion = digestion;
-    if (rate !== undefined) review.rate = rate;
-    if (food !== undefined) review.food = food; // Update the 'food' field if provided
-
-    await review.save();
-
-    res.status(200).json({ message: "Review updated successfully", review });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating review", error: error.toString() });
-  }
-});
-
-// Delete a review
+// Delete review
 router.delete("/delete-review/:id", isAuthenticated, async (req, res) => {
   const { id } = req.params;
   if (!id) {
     return res.status(400).json({ message: "Review ID is required" });
   }
   try {
+    // First, check if the review exists and if the user is authorized to delete it
     const reviewToDelete = await Review.findById(id);
-
     if (!reviewToDelete) {
       return res.status(404).json({ message: "Review not found" });
     }
@@ -132,7 +91,8 @@ router.delete("/delete-review/:id", isAuthenticated, async (req, res) => {
       return res.status(403).json({ message: "Unauthorized to delete this review" });
     }
 
-    await reviewToDelete.remove();
+    // If the review exists and the user is authorized, delete the review
+    await Review.findByIdAndDelete(id);
     res.status(200).json({ message: "Review deleted successfully" });
   } catch (error) {
     console.error("Error deleting review:", error); // Server-side logging
