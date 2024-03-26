@@ -6,6 +6,7 @@ const Food = require("../models/Food.model");
 const User = require("../models/User.model");
 const Review = require("../models/Review.model");
 const cloudinary = require("cloudinary").v2;
+const { zonedTimeToUtc, utcToZonedTime, format } = require("date-fns-tz");
 
 // Add food item with image upload
 router.post(
@@ -48,7 +49,6 @@ router.post(
 // Route to view food stats of the day
 router.get("/daily-stats", isAuthenticated, async (req, res) => {
   const userId = req.payload.id;
-  // Accept a date parameter from the query string; use current date as fallback
   let queryDate = new Date();
   if (req.query.date) {
     if (isNaN(Date.parse(req.query.date))) {
@@ -57,17 +57,18 @@ router.get("/daily-stats", isAuthenticated, async (req, res) => {
     queryDate = new Date(req.query.date);
   }
 
-  // Optionally accept a time zone offset in minutes (client to server)
-  const timeZoneOffset = req.query.tzOffset
-    ? parseInt(req.query.tzOffset, 10)
-    : 0;
-  queryDate = new Date(queryDate.getTime() - timeZoneOffset * 60000);
+  // Fallback to UTC+1 if no time zone is provided
+  const timeZone = req.query.tz || "Etc/GMT-1"; // Adjusted fallback
 
-  queryDate.setHours(0, 0, 0, 0); // Set to start of the query day
+  // Convert the queryDate to the start of the day in the client's time zone
+  const startOfDay = utcToZonedTime(queryDate, timeZone);
+  startOfDay.setHours(0, 0, 0, 0);
+  const startOfQueryDayUtc = zonedTimeToUtc(startOfDay, timeZone);
 
-  const startOfDay = new Date(queryDate);
-  const endOfDay = new Date(queryDate);
-  endOfDay.setHours(23, 59, 59, 999); // Set to end of the query day
+  // Convert the queryDate to the end of the day in the client's time zone
+  const endOfDay = utcToZonedTime(queryDate, timeZone);
+  endOfDay.setHours(23, 59, 59, 999);
+  const endOfQueryDayUtc = zonedTimeToUtc(endOfDay, timeZone);
 
   try {
     const user = await User.findById(userId);
@@ -77,7 +78,7 @@ router.get("/daily-stats", isAuthenticated, async (req, res) => {
 
     const foodItemsToday = await Food.find({
       user: userId,
-      date: { $gte: startOfDay, $lte: endOfDay },
+      date: { $gte: startOfQueryDayUtc, $lte: endOfQueryDayUtc },
     });
 
     // Calculate total intake

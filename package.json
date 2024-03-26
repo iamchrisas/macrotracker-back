@@ -12,6 +12,8 @@
     "cloudinary": "^1.41.3",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
+    "date-fns-tz": "^2.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.18.3",
     "express-jwt": "^8.4.1",
