@@ -24,7 +24,8 @@ module.exports = (app) => {
   // Controls a very specific header to pass headers from the frontend
   app.use(
     cors({
-      origin: [FRONTEND_URL], // Ensure CORS is configured to accept requests from your frontend
+      origin: "*",
+      //origin: "*", // Ensure CORS is configured to accept requests from your frontend
       credentials: true, // If your frontend needs to send cookies or rely on session-based authentication, enable this
     })
   );

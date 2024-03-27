@@ -13,6 +13,7 @@ const app = express();
 
 // Set Permissions-Policy header
 app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Permissions-Policy",
     "attribution-reporting=(), run-ad-auction=(), join-ad-interest-group=(), browsing-topics=()"

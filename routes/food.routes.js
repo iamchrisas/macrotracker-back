@@ -14,12 +14,12 @@ router.post(
   isAuthenticated,
   fileUploader.single("image"),
   async (req, res) => {
-    const { name, protein, carbs, fat, calories } = req.body; // Include calories in the destructuring
+    const { name, protein, carbs, fat, calories, date } = req.body; // Include calories in the destructuring
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
     }
     let imageUrl =
-      "https://substackcdn.com/image/fetch/f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer-e05bbc84-baa3-437e-9518-adb32be77984.s3.amazonaws.com%2Fpublic%2Fimages%2Fda435093-5e78-410d-b72b-ba3500a18130"; // Default value if no image is uploaded
+      "https://img.freepik.com/photos-premium/spaghetti-food-photography-delicieuse-cuisine-italienne-creee-ia-generative_115122-5690.jpg"; // Default value if no image is uploaded
 
     if (req.file) {
       imageUrl = req.file.path; // Cloudinary URL of the uploaded image
@@ -32,8 +32,9 @@ router.post(
         protein: protein || 0,
         carbs: carbs || 0,
         fat: fat || 0,
-        calories: calories || 0, // Ensure calories are included and have a default value
+        calories: calories || 0,
         image: imageUrl,
+        date: date ? new Date(date) : new Date(), // Use provided date or default to current date
       });
 
       const food = await newFood.save();
@@ -169,7 +170,8 @@ router.put(
   fileUploader.single("image"),
   async (req, res) => {
     const { id } = req.params;
-    const { name, protein, carbs, fat, calories } = req.body; // Include calories in the destructuring
+    // Include 'date' in the destructured fields from req.body
+    const { name, protein, carbs, fat, calories, date } = req.body;
     let imageUrl = req.body.image; // Use existing image URL by default
 
     if (req.file) {
@@ -184,13 +186,15 @@ router.put(
           .json({ message: "Unauthorized or food item not found" });
       }
 
-      // Update only provided fields
-      if (name) foodItem.name = name;
-      if (protein) foodItem.protein = protein;
-      if (carbs) foodItem.carbs = carbs;
-      if (fat) foodItem.fat = fat;
-      if (calories) foodItem.calories = calories; // Accept calories from the client
-      if (imageUrl) foodItem.image = imageUrl;
+      // Update only fields that are not undefined
+      if (name !== undefined) foodItem.name = name;
+      if (protein !== undefined) foodItem.protein = protein;
+      if (carbs !== undefined) foodItem.carbs = carbs;
+      if (fat !== undefined) foodItem.fat = fat;
+      if (calories !== undefined) foodItem.calories = calories;
+      if (imageUrl !== undefined) foodItem.image = imageUrl;
+      // Update the date if it's provided
+      if (date !== undefined) foodItem.date = new Date(date);
 
       const updatedFood = await foodItem.save();
       res
